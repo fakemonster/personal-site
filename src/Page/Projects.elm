@@ -1,4 +1,4 @@
-module Page.About exposing (Data, Model, Msg, page)
+module Page.Projects exposing (Data, Model, Msg, page)
 
 import DataSource exposing (DataSource)
 import DataSource.File as File
@@ -38,7 +38,7 @@ content =
                 (Decode.field "title" Decode.string)
                 (Markdown.decoder markdownString)
         )
-        "content/about.md"
+        "content/projects.md"
 
 
 page : Page RouteParams Data
