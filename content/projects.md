@@ -2,6 +2,8 @@
 title: projects
 ---
 
+# projects
+
 My existing work is mostly split between [music](/projects#Music) and [programming](/projects#Software) (I don't usually relate them to each other). These days it's about 90% programming!
 
 ## Software
@@ -41,6 +43,8 @@ All said, it's been excellent to work with. I get to have 100% confidence in eve
 - [source](https://github.com/fakemonster/stardew-valley-heelies)
 
 Not exactly a crowning technical achievement, but was fun to do a bit of C#! SV is one of my all-time favorite games, so it felt great to contribute a little bit to the experience.
+
+---
 
 ## Music
 

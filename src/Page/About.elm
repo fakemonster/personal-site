@@ -4,7 +4,6 @@ import DataSource exposing (DataSource)
 import DataSource.File as File
 import Head
 import Head.Seo as Seo
-import Html exposing (Html)
 import Markdown
 import OptimizedDecoder as Decode
 import Page exposing (Page, PageWithState, StaticPayload)
@@ -27,14 +26,14 @@ type alias RouteParams =
 
 
 type alias Data =
-    { title : String, body : List (Html.Html Msg) }
+    View Msg
 
 
 content : DataSource Data
 content =
     File.bodyWithFrontmatter
         (\markdownString ->
-            Decode.map2 Data
+            Decode.map2 View
                 (Decode.field "title" Decode.string)
                 (Markdown.decoder markdownString)
         )

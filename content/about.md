@@ -2,6 +2,8 @@
 title: about
 ---
 
+# about
+
 ## me (computers)
 
 I'm a web engineer living in LA, currently working at [Deepgram](https://deepgram.com). I've worked in a variety of languages, but most recent professional experience is in the Elm, React, and Next/Node.js ecosystems. If you're looking to collaborate, please contact! In general I try to work in languages/problem spaces different from my professional ones. These days I'm hobbying in Rust and Haskell, but it's always subject to change.
