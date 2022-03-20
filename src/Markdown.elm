@@ -21,6 +21,40 @@ byLine s =
     s ++ " by Joe Thel"
 
 
+borderEl : List (Element.Attribute msg) -> Element msg
+borderEl attrs =
+    Element.el (Render.funBorder :: attrs) Element.none
+
+
+funBox : Element msg -> Element msg
+funBox child =
+    Element.column [ Element.width Element.fill, Element.padding 18 ]
+        [ Element.row [ Element.width Element.fill ]
+            [ borderEl []
+            , borderEl [ Element.width Element.fill ]
+            , borderEl [ Render.funSide Render.Bottom, Element.width Element.fill ]
+            , borderEl []
+            ]
+        , Element.row [ Element.width Element.fill ]
+            [ Element.column [ Element.height Element.fill ]
+                [ borderEl [ Element.height Element.fill ]
+                , borderEl [ Render.funSide Render.Right, Element.height Element.fill ]
+                ]
+            , child
+            , Element.column [ Element.height Element.fill ]
+                [ borderEl [ Render.funSide Render.Left, Element.height Element.fill ]
+                , borderEl [ Element.height Element.fill ]
+                ]
+            ]
+        , Element.row [ Element.width Element.fill ]
+            [ borderEl []
+            , borderEl [ Render.funSide Render.Top, Element.width Element.fill ]
+            , borderEl [ Element.width Element.fill ]
+            , borderEl []
+            ]
+        ]
+
+
 ytEmbed : String -> String -> List (Element msg) -> Element msg
 ytEmbed url videoName _ =
     div
@@ -40,7 +74,7 @@ ytEmbed url videoName _ =
             []
         ]
         |> Element.html
-        |> Element.el [ Element.width Element.fill ]
+        |> funBox
 
 
 bcEmbed : String -> String -> String -> List (Element msg) -> Element msg
@@ -58,7 +92,7 @@ bcEmbed playerLink siteLink albumTitle _ =
             [ text (byLine albumTitle) ]
         ]
         |> Element.html
-        |> Element.el [ Element.width Element.fill ]
+        |> funBox
 
 
 embedRenderer : Markdown.Html.Renderer (List (Element msg) -> Element msg)
