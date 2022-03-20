@@ -44,7 +44,6 @@ All said, it's been excellent to work with. I get to have 100% confidence in eve
 
 Not exactly a crowning technical achievement, but was fun to do a bit of C#! SV is one of my all-time favorite games, so it felt great to contribute a little bit to the experience.
 
----
 
 ## Music
 

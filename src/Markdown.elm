@@ -13,41 +13,7 @@ import Markdown.Html
 import Markdown.Parser
 import Markdown.Renderer
 import OptimizedDecoder as Decode exposing (Decoder)
-
-
-elStyle : String -> String -> Element.Attribute msg
-elStyle property value =
-    Element.htmlAttribute <| style property value
-
-
-color =
-    { linkblue = Element.rgb255 0x00 0x00 0xFF
-    , lightgray = Element.rgb255 0xDD 0xDD 0xDD
-    }
-
-
-indent : Int -> Element.Attribute msg
-indent left =
-    Element.paddingEach { left = left, top = 0, right = 0, bottom = 0 }
-
-
-colorToString : Element.Color -> String
-colorToString c =
-    let
-        { alpha, red, green, blue } =
-            Element.toRgb c
-
-        i =
-            String.fromFloat
-
-        p =
-            (*) 100 >> String.fromFloat >> (\pct -> pct ++ "%")
-    in
-    "rgba(" ++ p red ++ "," ++ p green ++ "," ++ p blue ++ "," ++ i alpha ++ ")"
-
-
-lightgrayHex =
-    colorToString color.lightgray
+import Render
 
 
 byLine : String -> String
@@ -56,13 +22,13 @@ byLine s =
 
 
 ytEmbed : String -> String -> List (Element msg) -> Element msg
-ytEmbed link videoName _ =
+ytEmbed url videoName _ =
     div
         [ class "aspect-ratio aspect-ratio--16x9"
         , style "width" "100%"
         ]
         [ iframe
-            [ src link
+            [ src url
             , title (byLine videoName)
             , class "aspect-ratio--object"
             , attribute "frameborder" "0"
@@ -126,25 +92,28 @@ renderer =
                         )
 
                 H2 ->
-                    Element.paragraph [ Font.bold, Region.heading 2, Font.size 24 ]
+                    Element.paragraph
+                        [ Font.bold, Region.heading 2, Render.padTop 32, Font.size 24 ]
                         children
 
                 H3 ->
-                    Element.paragraph [ Font.bold, Region.heading 3, Font.size 20 ]
+                    Element.paragraph
+                        [ Font.bold, Region.heading 3, Render.padTop 16, Font.size 20 ]
                         children
 
                 _ ->
-                    Element.paragraph [ Font.bold, Font.size 16 ]
+                    Element.paragraph
+                        [ Font.bold, Font.size 16 ]
                         children
     , paragraph = Element.paragraph [ Element.spacing 6 ]
     , blockQuote =
         \children ->
-            Element.el [ Font.size 14, indent 24 ]
+            Element.el [ Font.size 14, Render.indent 24 ]
                 (Element.column
                     [ Element.width Element.fill
-                    , elStyle "border" "6px solid transparent"
-                    , elStyle "border-left-color" lightgrayHex
-                    , indent 6
+                    , Render.indent 6
+                    , Render.funBorder
+                    , Render.funSide Render.Left
                     ]
                     children
                 )
@@ -153,7 +122,7 @@ renderer =
     , codeSpan =
         \text ->
             Element.paragraph
-                [ Background.color color.lightgray
+                [ Background.color Render.color.lightgray
                 , Font.family [ Font.monospace ]
                 , Font.size 12
                 , Element.paddingXY 4 2
@@ -164,31 +133,7 @@ renderer =
     , emphasis = Element.row [ Font.italic ]
     , strikethrough = Element.row [ Font.strike ]
     , hardLineBreak = Html.br [] [] |> Element.html
-    , link =
-        \link children ->
-            let
-                linkFunction =
-                    if String.startsWith "/" link.destination then
-                        Element.link
-
-                    else
-                        Element.newTabLink
-
-                attrs =
-                    case link.title of
-                        Just linkTitle ->
-                            [ Element.htmlAttribute (title linkTitle) ]
-
-                        Nothing ->
-                            []
-            in
-            linkFunction attrs
-                { url = link.destination
-                , label =
-                    Element.paragraph
-                        [ Font.color color.linkblue ]
-                        children
-                }
+    , link = Render.link
     , image =
         \image ->
             let
@@ -205,7 +150,7 @@ renderer =
                 { src = image.src, description = image.alt }
     , unorderedList =
         \items ->
-            Element.column [ indent 18, Element.spacing 8 ]
+            Element.column [ Render.indent 18, Element.spacing 8 ]
                 (List.map
                     (\(ListItem task children) ->
                         Element.row [ Element.spacing 6 ]
@@ -226,9 +171,7 @@ renderer =
                                             [ Element.height (Element.px 2) ]
                                             Element.none
                                         , Element.el
-                                            [ elStyle "border" "6px solid transparent"
-                                            , elStyle "border-right-color" lightgrayHex
-                                            ]
+                                            [ Render.funBorder, Render.funSide Render.Right ]
                                             Element.none
                                         ]
                              )
@@ -239,7 +182,7 @@ renderer =
                 )
     , orderedList =
         \startingIndex itemsList ->
-            Element.column [ indent 24 ]
+            Element.column [ Render.indent 24 ]
                 (List.indexedMap
                     (\index items ->
                         Element.row
@@ -248,10 +191,11 @@ renderer =
                                     Element.text (String.fromInt (startingIndex + index))
                             ]
                             [ Element.el
-                                [ elStyle "border" "6px solid"
-                                , elStyle "border-color" lightgrayHex
-                                , elStyle "border-right-color" "transparent"
-                                , Element.height Element.fill
+                                [ Element.height Element.fill
+                                , Render.funBorder
+                                , Render.funSide Render.Top
+                                , Render.funSide Render.Bottom
+                                , Render.funSide Render.Left
                                 ]
                                 Element.none
                             , Element.paragraph [ Element.paddingXY 0 8 ] items
@@ -271,9 +215,9 @@ renderer =
                             Element.el
                                 [ Element.alignRight
                                 , Element.paddingXY 4 2
-                                , elStyle "border" "6px solid transparent"
-                                , elStyle "border-bottom-color" lightgrayHex
-                                , elStyle "border-left-color" lightgrayHex
+                                , Render.funBorder
+                                , Render.funSide Render.Left
+                                , Render.funSide Render.Bottom
                                 ]
                                 (Element.text lang)
 
@@ -281,7 +225,7 @@ renderer =
                         Element.none
                 , Element.el
                     [ Font.family [ Font.monospace ]
-                    , Background.color color.lightgray
+                    , Background.color Render.color.lightgray
                     , Element.padding 8
                     , Element.width Element.fill
                     , Font.size 12
@@ -290,17 +234,17 @@ renderer =
                 ]
     , thematicBreak =
         Element.row
-            [ Element.width Element.fill ]
+            [ Element.width Element.fill, Element.paddingXY 0 24 ]
             [ Element.el
                 [ Element.width Element.fill
-                , elStyle "border" "6px solid transparent"
-                , elStyle "border-top-color" lightgrayHex
+                , Render.funBorder
+                , Render.funSide Render.Top
                 ]
                 Element.none
             , Element.el
                 [ Element.width Element.fill
-                , elStyle "border" "6px solid transparent"
-                , elStyle "border-bottom-color" lightgrayHex
+                , Render.funBorder
+                , Render.funSide Render.Bottom
                 ]
                 Element.none
             ]
@@ -328,7 +272,7 @@ decoder =
             (Markdown.Renderer.render renderer)
         >> Result.map
             (Element.column
-                [ Element.spacing 24
+                [ Element.spacing 16
                 , Element.centerX
                 , Font.size 16
                 , Element.width
