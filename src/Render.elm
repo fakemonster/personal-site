@@ -2,6 +2,7 @@ module Render exposing
     ( BorderSide(..)
     , clearBorder
     , color
+    , elStyle
     , funBorder
     , funSide
     , indent

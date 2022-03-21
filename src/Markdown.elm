@@ -297,6 +297,7 @@ decoder =
         >> Result.map
             (Element.column
                 [ Element.spacing 16
+                , Element.paddingXY 8 0
                 , Element.centerX
                 , Font.size 16
                 , Element.width
