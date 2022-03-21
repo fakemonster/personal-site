@@ -1,12 +1,10 @@
-module Dots exposing
+port module Dots exposing
     ( Config
     , Msg
     , Space
     , decoder
-    , defaultConfig
     , draw
     , init
-    , reinit
     , subscriptions
     , update
     )
@@ -38,6 +36,22 @@ type alias Dot =
     }
 
 
+type alias Placeholder =
+    { width : Int
+    , height : Int
+    }
+
+
+type alias Requirements =
+    { id : String
+    , text : String
+    , width : Maybe Int
+    , resolutions : List Int
+    , frameLength : Int
+    , cutoffPercentage : Int
+    }
+
+
 type alias Config =
     { width : Int
     , height : Int
@@ -45,15 +59,16 @@ type alias Config =
     , points : List Point
     , frameLength : Int
     , cutoffPercentage : Float
+    , id : String
     }
 
 
-defaultConfig : Config
-defaultConfig =
-    Config 1 1 1 [] 10 100
+type Space
+    = Waiting Requirements
+    | Ready State
 
 
-type alias Space =
+type alias State =
     { colors : List Color
     , delays : List Int
     , limit : Int
@@ -61,30 +76,17 @@ type alias Space =
     }
 
 
-init : Config -> ( Space, Cmd Msg )
-init config =
-    let
-        { frameLength, cutoffPercentage } =
-            config
+port gatherConfig : Requirements -> Cmd msg
 
-        pointCount =
-            List.length config.points
-    in
-    ( { colors = []
-      , delays = []
-      , limit = 0
-      , config = config
-      }
-    , Cmd.batch
-        [ genColors pointCount
-        , genDelays pointCount frameLength ((100 - cutoffPercentage) / 100) Nothing
-        ]
+
+port configReady : (Config -> msg) -> Sub msg
+
+
+init : Requirements -> ( Space, Cmd Msg )
+init requirements =
+    ( Waiting requirements
+    , gatherConfig requirements
     )
-
-
-reinit : Space -> ( Space, Cmd Msg )
-reinit { config } =
-    init config
 
 
 
@@ -93,13 +95,14 @@ reinit { config } =
 
 decoder : Decoder Config
 decoder =
-    Decode.map6 Config
+    Decode.map7 Config
         (Decode.at [ "width" ] Decode.int)
         (Decode.at [ "height" ] Decode.int)
         (Decode.at [ "radius" ] Decode.float)
         (Decode.at [ "points" ] (Decode.list pointDecoder))
         (Decode.at [ "frameLength" ] Decode.int)
         (Decode.at [ "cutoffPercentage" ] Decode.float)
+        (Decode.at [ "id" ] Decode.string)
 
 
 pointDecoder : Decoder Point
@@ -194,19 +197,50 @@ type Msg
     = NewColors (List Color)
     | NewDelays (List Int)
     | Tick Posix
+    | GotConfig Config
 
 
-update : Msg -> Space -> ( Space, Cmd msg )
+update : Msg -> Space -> ( Space, Cmd Msg )
 update msg space =
-    case msg of
-        NewColors colors ->
-            ( { space | colors = colors }, Cmd.none )
+    case ( msg, space ) of
+        ( GotConfig config, Waiting requirements ) ->
+            if config.id == requirements.id then
+                let
+                    { frameLength, cutoffPercentage } =
+                        config
 
-        NewDelays delays ->
-            ( { space | delays = delays }, Cmd.none )
+                    pointCount =
+                        List.length config.points
+                in
+                ( Ready
+                    { colors = []
+                    , delays = []
+                    , limit = 0
+                    , config = config
+                    }
+                , Cmd.batch
+                    [ genColors pointCount
+                    , genDelays pointCount frameLength ((100 - cutoffPercentage) / 100) Nothing
+                    ]
+                )
 
-        Tick posix ->
-            ( { space | limit = space.limit + 1 }, Cmd.none )
+            else
+                ( space, Cmd.none )
+
+        ( _, Waiting _ ) ->
+            ( space, Cmd.none )
+
+        ( GotConfig config, Ready state ) ->
+            ( space, Cmd.none )
+
+        ( NewColors colors, Ready state ) ->
+            ( Ready { state | colors = colors }, Cmd.none )
+
+        ( NewDelays delays, Ready state ) ->
+            ( Ready { state | delays = delays }, Cmd.none )
+
+        ( Tick posix, Ready state ) ->
+            ( Ready { state | limit = state.limit + 1 }, Cmd.none )
 
 
 
@@ -252,29 +286,58 @@ bg width height =
 
 
 draw : Space -> List (Html.Attribute msg) -> Html msg
-draw { config, colors, limit, delays } attrs =
+draw space attrs =
     let
-        { width, height, points, radius } =
-            config
+        usedWidth =
+            case space of
+                Waiting requirements ->
+                    requirements.width |> Maybe.withDefault 0
+
+                Ready { config } ->
+                    config.width
 
         f =
             toFloat
-
-        delayFilter =
-            filterOnDelay limit delays
-
-        dots =
-            toDots (radius * 0.85) colors points
     in
-    Canvas.toHtml ( width, height )
-        (List.concat
-            [ [ id "dots", style "pointer-events" "none" ]
-            , attrs
-            ]
-        )
-        (bg (f width) (f height)
-            :: (dots |> delayFilter |> List.map toShape)
-        )
+    Html.div
+        [ style "width" (String.fromInt usedWidth ++ "px")
+
+        -- a pretty rough guess! just used so that elements wrapping under have
+        -- _some_ padding
+        , style "height" (String.fromFloat (f usedWidth / 4) ++ "px")
+        , style "transform" "translateY(50%)"
+        , style "position" "relative"
+        ]
+        [ case space of
+            Waiting requirements ->
+                Html.div [] []
+
+            Ready { config, colors, limit, delays } ->
+                let
+                    { width, height, points, radius } =
+                        config
+
+                    delayFilter =
+                        filterOnDelay limit delays
+
+                    dots =
+                        toDots (radius * 0.85) colors points
+                in
+                Html.div
+                    [ style "position" "absolute"
+                    , style "transform" "translateY(-50%)"
+                    ]
+                    [ Canvas.toHtml ( width, height )
+                        (List.concat
+                            [ [ id ("dots-" ++ config.id), style "pointer-events" "none" ]
+                            , attrs
+                            ]
+                        )
+                        (bg (f width) (f height)
+                            :: (dots |> delayFilter |> List.map toShape)
+                        )
+                    ]
+        ]
 
 
 
@@ -282,10 +345,15 @@ draw { config, colors, limit, delays } attrs =
 
 
 subscriptions : Space -> Sub Msg
-subscriptions { limit, config } =
-    case limit > config.frameLength of
-        True ->
-            Sub.none
+subscriptions space =
+    case space of
+        Waiting _ ->
+            configReady GotConfig
 
-        False ->
-            onAnimationFrame Tick
+        Ready { limit, config } ->
+            case limit > config.frameLength of
+                True ->
+                    Sub.none
+
+                False ->
+                    onAnimationFrame Tick

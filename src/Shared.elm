@@ -48,15 +48,21 @@ type SharedMsg
 
 
 type alias Model =
-    { dots : Maybe Dots.Space
+    { dots : Dots.Space
     }
 
 
-decodeDotConfig : String -> Decode.Value -> Dots.Config
-decodeDotConfig field json =
-    json
-        |> Decode.decodeValue (Decode.at [ field ] Dots.decoder)
-        |> Result.withDefault Dots.defaultConfig
+navDots : ( Dots.Space, Cmd Msg )
+navDots =
+    Dots.init
+        { id = "navbar"
+        , text = "joe thel"
+        , width = Just 150
+        , resolutions = [ 2, 3, 10, 20 ]
+        , frameLength = 10
+        , cutoffPercentage = 100
+        }
+        |> Tuple.mapSecond (Cmd.map OnDotsMsg)
 
 
 init :
@@ -74,51 +80,40 @@ init :
             }
     -> ( Model, Cmd Msg )
 init navigationKey flags maybePagePath =
-    case flags of
-        Pages.Flags.PreRenderFlags ->
-            ( { dots = Nothing }, Cmd.none )
-
-        Pages.Flags.BrowserFlags json ->
-            let
-                ( dotSpace, dotCmd ) =
-                    Dots.init <| decodeDotConfig "dotConfig" json
-            in
-            ( { dots = Just dotSpace }
-            , Cmd.map OnDotsMsg dotCmd
-            )
+    let
+        ( dotSpace, dotCmd ) =
+            navDots
+    in
+    ( { dots = dotSpace }
+    , dotCmd
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        OnPageChange _ ->
-            case model.dots of
-                Just dots ->
-                    let
-                        ( dotSpace, dotCmd ) =
-                            Dots.reinit dots
-                    in
-                    ( { dots = Just dotSpace }
-                    , Cmd.map OnDotsMsg dotCmd
-                    )
-
-                Nothing ->
-                    ( model, Cmd.none )
+        OnPageChange message ->
+            -- TODO: _sometimes_ on a page change, when this is active, the
+            -- logo is wiped and nothing shows up to replace it. why?
+            --
+            -- let
+            --     ( dotSpace, dotCmd ) =
+            --         navDots
+            -- in
+            -- ( { dots = dotSpace }
+            -- , dotCmd
+            -- )
+            ( model, Cmd.none )
 
         SharedMsg globalMsg ->
             ( model, Cmd.none )
 
         OnDotsMsg dotsMsg ->
-            case model.dots of
-                Just dots ->
-                    let
-                        ( newDots, dotsCmd ) =
-                            Dots.update dotsMsg dots
-                    in
-                    ( { model | dots = Just newDots }, Cmd.map OnDotsMsg dotsCmd )
-
-                Nothing ->
-                    ( model, Cmd.none )
+            let
+                ( newDots, dotsCmd ) =
+                    Dots.update dotsMsg model.dots
+            in
+            ( { model | dots = newDots }, Cmd.map OnDotsMsg dotsCmd )
 
 
 subscriptions : Path -> Model -> Sub Msg
@@ -126,8 +121,8 @@ subscriptions _ model =
     let
         dots =
             model.dots
-                |> Maybe.map (Dots.subscriptions >> Sub.map OnDotsMsg)
-                |> Maybe.withDefault Sub.none
+                |> Dots.subscriptions
+                |> Sub.map OnDotsMsg
     in
     dots
 
@@ -180,33 +175,17 @@ navBar model =
             [ Element.width Element.fill
             , Element.spaceEvenly
             , Element.spacing 16
-            , Element.paddingXY 32 16
+            , Element.paddingXY 32 24
             ]
             [ Render.link
                 { title = Just "Joe Thel"
                 , destination = "/"
                 }
-                [ case model.dots of
-                    Just dots ->
-                        Dots.draw dots
-                            [ Html.Attributes.style "top" "8px"
-                            , Html.Attributes.style "position" "relative"
-                            ]
-                            |> Element.html
-
-                    Nothing ->
-                        Element.el
-                            -- TODO: this is a bit of a hack to fill the
-                            -- space the above element _would_ take up if
-                            -- it could be rendered server-side. I haven't
-                            -- figured out how to (within elm-ui) have this
-                            -- item absolutely-positioned in a centered way
-                            -- (which would, arguably, be its own kind of
-                            -- hack!
-                            [ Element.height (Element.px 40)
-                            , Element.width (Element.px 150)
-                            ]
-                            Element.none
+                [ Dots.draw model.dots
+                    [ Html.Attributes.style "top" "8px"
+                    , Html.Attributes.style "position" "relative"
+                    ]
+                    |> Element.html
                 ]
             , links []
                 [ { label = "about", url = "/about" }

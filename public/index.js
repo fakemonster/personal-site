@@ -9,20 +9,32 @@ const oneOf = opts => opts[Math.floor(Math.random() * opts.length)]
 /** @type ElmPagesInit */
 export default {
   load: async function (elmLoaded) {
+    const bigWidth =
+      Math.floor(Math.min(window.innerWidth * 0.8, window.innerHeight * 1.4))
     const app = await elmLoaded
+    app.ports.gatherConfig.subscribe(({
+      id,
+      cutoffPercentage,
+      frameLength,
+      resolutions,
+      text,
+      width,
+    }) => {
+      app.ports.configReady.send({
+        ...pixelate({
+          text,
+          width: width || bigWidth,
+          resolution: oneOf(resolutions),
+        }),
+        id,
+        frameLength,
+        cutoffPercentage,
+      })
+    })
+
     console.log("App loaded", app)
   },
   flags: function () {
-    return {
-      dotConfig: {
-        ...pixelate({
-          text: 'joe thel',
-          width: 150,
-          resolution: oneOf([2, 3, 10, 20]),
-        }),
-        frameLength: 10,
-        cutoffPercentage: 100,
-      },
-    }
+    return "You can decode this in Shared.elm using Json.Decode.string!"
   },
 }
