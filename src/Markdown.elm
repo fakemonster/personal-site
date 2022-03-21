@@ -116,14 +116,12 @@ renderer =
         \{ level, rawText, children } ->
             case level of
                 H1 ->
-                    Element.el [ Element.alignRight ]
-                        (Element.paragraph
-                            [ Element.alignRight, Font.bold, Font.size 36 ]
-                            [ Element.text "("
-                            , Element.paragraph [ Region.heading 1 ] children
-                            , Element.text ")"
-                            ]
-                        )
+                    Element.row
+                        [ Element.alignRight, Font.bold, Font.size 36 ]
+                        [ borderEl [ Render.funSide Render.Left ]
+                        , Element.paragraph [ Region.heading 1 ] children
+                        , borderEl [ Render.funSide Render.Right ]
+                        ]
 
                 H2 ->
                     Element.paragraph
@@ -142,15 +140,15 @@ renderer =
     , paragraph = Element.paragraph [ Element.spacing 6 ]
     , blockQuote =
         \children ->
-            Element.el [ Font.size 14, Render.indent 24 ]
-                (Element.column
+            Element.row
+                [ Font.size 14, Render.indent 18, Font.italic, Font.color Render.color.darkgray ]
+                [ borderEl [ Render.funSide Render.Right, Element.height Element.fill ]
+                , Element.column
                     [ Element.width Element.fill
                     , Render.indent 6
-                    , Render.funBorder
-                    , Render.funSide Render.Left
                     ]
                     children
-                )
+                ]
     , html = embedRenderer
     , text = Element.text
     , codeSpan =
@@ -184,10 +182,10 @@ renderer =
                 { src = image.src, description = image.alt }
     , unorderedList =
         \items ->
-            Element.column [ Render.indent 18, Element.spacing 8 ]
+            Element.column [ Render.indent 24, Element.spacing 8 ]
                 (List.map
                     (\(ListItem task children) ->
-                        Element.row [ Element.spacing 6 ]
+                        Element.row []
                             ((case task of
                                 IncompleteTask ->
                                     -- TODO: what do these look like?
@@ -199,14 +197,12 @@ renderer =
 
                                 NoTask ->
                                     Element.column
-                                        [ Element.alignTop
-                                        ]
+                                        [ Element.alignTop ]
                                         [ Element.el
                                             [ Element.height (Element.px 2) ]
                                             Element.none
-                                        , Element.el
-                                            [ Render.funBorder, Render.funSide Render.Right ]
-                                            Element.none
+                                        , borderEl
+                                            [ Render.funSide Render.Left ]
                                         ]
                              )
                                 :: children
@@ -224,14 +220,12 @@ renderer =
                                 Element.el [ Element.centerY, Element.paddingXY 4 0 ] <|
                                     Element.text (String.fromInt (startingIndex + index))
                             ]
-                            [ Element.el
+                            [ borderEl
                                 [ Element.height Element.fill
-                                , Render.funBorder
                                 , Render.funSide Render.Top
                                 , Render.funSide Render.Bottom
                                 , Render.funSide Render.Left
                                 ]
-                                Element.none
                             , Element.paragraph [ Element.paddingXY 0 8 ] items
                             ]
                     )
@@ -269,18 +263,14 @@ renderer =
     , thematicBreak =
         Element.row
             [ Element.width Element.fill, Element.paddingXY 0 24 ]
-            [ Element.el
+            [ borderEl
                 [ Element.width Element.fill
-                , Render.funBorder
                 , Render.funSide Render.Top
                 ]
-                Element.none
-            , Element.el
+            , borderEl
                 [ Element.width Element.fill
-                , Render.funBorder
                 , Render.funSide Render.Bottom
                 ]
-                Element.none
             ]
     , table = Element.column []
     , tableHeader = Element.column []

@@ -70,6 +70,7 @@ borderSideToString side =
 color =
     { linkblue = Element.rgb255 0x00 0x00 0xFF
     , lightgray = Element.rgb255 0xDD 0xDD 0xDD
+    , darkgray = Element.rgb255 0x66 0x66 0x66
     }
 
 
