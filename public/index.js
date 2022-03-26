@@ -14,7 +14,7 @@ export default {
     const app = await elmLoaded
     app.ports.gatherConfig.subscribe(({
       id,
-      cutoffPercentage,
+      percentVisible,
       frameLength,
       resolutions,
       text,
@@ -28,7 +28,7 @@ export default {
         }),
         id,
         frameLength,
-        cutoffPercentage,
+        percentVisible,
       })
     })
 

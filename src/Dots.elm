@@ -6,6 +6,7 @@ port module Dots exposing
     , decoder
     , draw
     , init
+    , reinit
     , subscriptions
     , update
     )
@@ -32,8 +33,9 @@ type alias Point =
 
 type alias Dot =
     { r : Float
-    , color : Color
     , pos : ( Float, Float )
+    , color : Color
+    , delay : Int
     }
 
 
@@ -49,7 +51,7 @@ type alias Requirements =
     , width : Maybe Int
     , resolutions : List Int
     , frameLength : Int
-    , cutoffPercentage : Int
+    , percentVisible : Int
     }
 
 
@@ -59,7 +61,7 @@ type alias Config =
     , radius : Float
     , points : List Point
     , frameLength : Int
-    , cutoffPercentage : Float
+    , percentVisible : Float
     , id : String
     }
 
@@ -70,17 +72,10 @@ type Space
 
 
 type alias State =
-    { colors : List Color
-    , delays : List Int
+    { dots : List Dot
     , limit : Int
     , config : Config
     }
-
-
-port gatherConfig : Requirements -> Cmd msg
-
-
-port configReady : (Config -> msg) -> Sub msg
 
 
 init : Requirements -> ( Space, Cmd Msg )
@@ -88,6 +83,19 @@ init requirements =
     ( Waiting requirements
     , gatherConfig requirements
     )
+
+
+reinit : Space -> ( Space, Cmd Msg )
+reinit space =
+    case space of
+        Waiting requirements ->
+            init requirements
+
+        Ready state ->
+            ( Ready state
+            , dotsGenerator state.config
+                |> Random.generate (GeneratedDots state.config)
+            )
 
 
 
@@ -102,7 +110,7 @@ decoder =
         (Decode.at [ "radius" ] Decode.float)
         (Decode.at [ "points" ] (Decode.list pointDecoder))
         (Decode.at [ "frameLength" ] Decode.int)
-        (Decode.at [ "cutoffPercentage" ] Decode.float)
+        (Decode.at [ "percentVisible" ] Decode.float)
         (Decode.at [ "id" ] Decode.string)
 
 
@@ -133,19 +141,13 @@ colorGenerator =
         (Random.float 0.7 0.85)
 
 
-genColors : Int -> Cmd Msg
-genColors len =
-    Random.generate NewColors (colorsGenerator len)
-
-
-colorsGenerator : Int -> Random.Generator (List Color)
-colorsGenerator len =
-    Random.list len colorGenerator
-
-
-delaysGenerator : Int -> Int -> Float -> Random.Generator (List Int)
-delaysGenerator len max cutoffRatio =
+delayGenerator : Int -> Float -> Random.Generator Int
+delayGenerator max percentVisible =
     let
+        -- reach is used to "zoom out" on a tan curve, to increase the
+        -- proportion of dots that appear in the middle of the drawing. Higher
+        -- value means more dots in the middle. Approaches a linear animation
+        -- as you approach 0
         reach =
             10
 
@@ -160,25 +162,40 @@ delaysGenerator len max cutoffRatio =
                     )
 
         toFilteredGenerator x =
-            Random.weighted ( 1 - cutoffRatio, x ) [ ( cutoffRatio, max + 1 ) ]
+            Random.weighted
+                ( percentVisible, x )
+                [ ( 100 - percentVisible, max + 1 ) ]
     in
     Random.andThen toFilteredGenerator thresholdGenerator
-        |> Random.list len
 
 
-genDelays : Int -> Int -> Float -> Cmd Msg
-genDelays len max cutoffRatio =
-    delaysGenerator len max cutoffRatio
-        |> Random.generate NewDelays
+colorsAndDelaysGenerator : Config -> Random.Generator (List ( Color, Int ))
+colorsAndDelaysGenerator config =
+    Random.map2
+        Tuple.pair
+        colorGenerator
+        (delayGenerator config.frameLength config.percentVisible)
+        |> Random.list (List.length config.points)
+
+
+dotsGenerator : Config -> Random.Generator (List Dot)
+dotsGenerator config =
+    colorsAndDelaysGenerator config
+        |> Random.map (toDots (config.radius * 0.85) config.points)
 
 
 
 -- Update
 
 
+port gatherConfig : Requirements -> Cmd msg
+
+
+port configReady : (Config -> msg) -> Sub msg
+
+
 type Msg
-    = NewColors (List Color)
-    | NewDelays (List Int)
+    = GeneratedDots Config (List Dot)
     | Tick Posix
     | GotConfig Config
 
@@ -189,26 +206,28 @@ update msg space =
         ( GotConfig config, Waiting requirements ) ->
             if config.id == requirements.id then
                 let
-                    { frameLength, cutoffPercentage } =
+                    { frameLength, percentVisible } =
                         config
 
                     pointCount =
                         List.length config.points
                 in
-                ( Ready
-                    { colors = []
-                    , delays = []
-                    , limit = 0
-                    , config = config
-                    }
-                , Cmd.batch
-                    [ genColors pointCount
-                    , genDelays pointCount frameLength ((100 - cutoffPercentage) / 100)
-                    ]
+                ( Waiting requirements
+                , dotsGenerator config
+                    |> Random.generate (GeneratedDots config)
                 )
 
             else
                 ( space, Cmd.none )
+
+        ( GeneratedDots config dots, Waiting _ ) ->
+            ( Ready
+                { dots = dots
+                , limit = 0
+                , config = config
+                }
+            , Cmd.none
+            )
 
         ( _, Waiting _ ) ->
             ( space, Cmd.none )
@@ -216,11 +235,14 @@ update msg space =
         ( GotConfig config, Ready state ) ->
             ( space, Cmd.none )
 
-        ( NewColors colors, Ready state ) ->
-            ( Ready { state | colors = colors }, Cmd.none )
-
-        ( NewDelays delays, Ready state ) ->
-            ( Ready { state | delays = delays }, Cmd.none )
+        ( GeneratedDots config dots, Ready state ) ->
+            ( Ready
+                { state
+                    | dots = dots
+                    , config = config
+                }
+            , Cmd.none
+            )
 
         ( Tick posix, Ready state ) ->
             ( Ready { state | limit = state.limit + 1 }, Cmd.none )
@@ -230,9 +252,9 @@ update msg space =
 -- View
 
 
-toDots : Float -> List Color -> List Point -> List Dot
+toDots : Float -> List Point -> List ( Color, Int ) -> List Dot
 toDots r =
-    List.map2 (Dot r)
+    List.map2 (\point ( color, delay ) -> Dot r point color delay)
 
 
 toShape : Dot -> Renderable
@@ -240,23 +262,20 @@ toShape { pos, r, color } =
     shapes [ fill color ] [ circle pos r ]
 
 
-filterOnDelay : Int -> List Int -> List a -> List a
-filterOnDelay limit ds xs =
+filterOnDelay : Int -> List Dot -> List Dot
+filterOnDelay limit dots =
     let
-        joined =
-            List.map2 Tuple.pair ds xs
-
         filtered =
             List.filterMap
-                (\( d, x ) ->
-                    case d < limit of
+                (\dot ->
+                    case dot.delay < limit of
                         True ->
-                            Just x
+                            Just dot
 
                         False ->
                             Nothing
                 )
-                joined
+                dots
     in
     filtered
 
@@ -310,16 +329,13 @@ draw space alignment =
             Waiting requirements ->
                 Html.div [] []
 
-            Ready { config, colors, limit, delays } ->
+            Ready { config, dots, limit } ->
                 let
-                    { width, height, points, radius } =
+                    { width, height } =
                         config
 
                     delayFilter =
-                        filterOnDelay limit delays
-
-                    dots =
-                        toDots (radius * 0.85) colors points
+                        filterOnDelay limit
                 in
                 Html.div innerStyle
                     [ Canvas.toHtml ( width, height )

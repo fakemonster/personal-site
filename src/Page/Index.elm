@@ -37,7 +37,7 @@ init shared _ =
                 , width = Nothing
                 , resolutions = [ 15 ]
                 , frameLength = 160
-                , cutoffPercentage = 80
+                , percentVisible = 80
                 }
                 |> Tuple.mapSecond (Cmd.map OnDotsMsg)
     in

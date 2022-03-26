@@ -60,7 +60,7 @@ navDots =
         , width = Just 150
         , resolutions = [ 2, 3, 10, 20 ]
         , frameLength = 10
-        , cutoffPercentage = 100
+        , percentVisible = 100
         }
         |> Tuple.mapSecond (Cmd.map OnDotsMsg)
 
@@ -93,17 +93,13 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         OnPageChange message ->
-            -- TODO: _sometimes_ on a page change, when this is active, the
-            -- logo is wiped and nothing shows up to replace it. why?
-            --
-            -- let
-            --     ( dotSpace, dotCmd ) =
-            --         navDots
-            -- in
-            -- ( { dots = dotSpace }
-            -- , dotCmd
-            -- )
-            ( model, Cmd.none )
+            let
+                ( dotSpace, dotCmd ) =
+                    Dots.reinit model.dots
+            in
+            ( { dots = dotSpace }
+            , Cmd.map OnDotsMsg dotCmd
+            )
 
         SharedMsg globalMsg ->
             ( model, Cmd.none )
