@@ -32,7 +32,7 @@ export default {
       })
     })
 
-    console.log("App loaded", app)
+    console.info("App loaded", app)
   },
   flags: function () {
     return "You can decode this in Shared.elm using Json.Decode.string!"

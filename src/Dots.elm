@@ -2,6 +2,7 @@ port module Dots exposing
     ( Config
     , Msg
     , Space
+    , VerticalAlignment(..)
     , decoder
     , draw
     , init
@@ -285,8 +286,13 @@ bg width height =
         [ rect ( 0, 0 ) width height ]
 
 
-draw : Space -> List (Html.Attribute msg) -> Html msg
-draw space attrs =
+type VerticalAlignment
+    = CenteredY
+    | CenteredX
+
+
+draw : Space -> VerticalAlignment -> Html msg
+draw space alignment =
     let
         usedWidth =
             case space of
@@ -298,16 +304,26 @@ draw space attrs =
 
         f =
             toFloat
+
+        ( outerStyle, innerStyle ) =
+            case alignment of
+                CenteredY ->
+                    -- a pretty rough guess! just used so that elements
+                    -- wrapping under have _some_ padding
+                    ( [ style "height" (String.fromFloat (f usedWidth / 4) ++ "px")
+                      , style "transform" "translateY(50%)"
+                      , style "position" "relative"
+                      ]
+                    , [ style "position" "absolute"
+                      , style "transform" "translateY(-50%)"
+                      ]
+                    )
+
+                CenteredX ->
+                    ( [ style "margin" "auto" ], [] )
     in
     Html.div
-        [ style "width" (String.fromInt usedWidth ++ "px")
-
-        -- a pretty rough guess! just used so that elements wrapping under have
-        -- _some_ padding
-        , style "height" (String.fromFloat (f usedWidth / 4) ++ "px")
-        , style "transform" "translateY(50%)"
-        , style "position" "relative"
-        ]
+        (style "width" (String.fromInt usedWidth ++ "px") :: outerStyle)
         [ case space of
             Waiting requirements ->
                 Html.div [] []
@@ -323,16 +339,13 @@ draw space attrs =
                     dots =
                         toDots (radius * 0.85) colors points
                 in
-                Html.div
-                    [ style "position" "absolute"
-                    , style "transform" "translateY(-50%)"
-                    ]
+                Html.div innerStyle
                     [ Canvas.toHtml ( width, height )
-                        (List.concat
-                            [ [ id ("dots-" ++ config.id), style "pointer-events" "none" ]
-                            , attrs
-                            ]
-                        )
+                        [ id ("dots-" ++ config.id)
+                        , style "pointer-events" "none"
+                        , style "display" "block"
+                        , style "line-height" "0"
+                        ]
                         (bg (f width) (f height)
                             :: (dots |> delayFilter |> List.map toShape)
                         )

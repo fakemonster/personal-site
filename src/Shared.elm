@@ -182,9 +182,7 @@ navBar model =
                 , destination = "/"
                 }
                 [ Dots.draw model.dots
-                    [ Html.Attributes.style "top" "8px"
-                    , Html.Attributes.style "position" "relative"
-                    ]
+                    Dots.CenteredY
                     |> Element.html
                 ]
             , links []
