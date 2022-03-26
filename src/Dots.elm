@@ -124,8 +124,8 @@ pointDecoder =
 -- Rand
 
 
-randColor : Random.Generator Color
-randColor =
+colorGenerator : Random.Generator Color
+colorGenerator =
     Random.map4 Color.hsla
         (Random.float 0.45 0.8)
         (Random.float 0.7 0.85)
@@ -134,59 +134,41 @@ randColor =
 
 
 genColors : Int -> Cmd Msg
-genColors n =
-    Random.generate NewColors (Random.list n randColor)
+genColors len =
+    Random.generate NewColors (colorsGenerator len)
 
 
-sq a =
-    a ^ 6
+colorsGenerator : Int -> Random.Generator (List Color)
+colorsGenerator len =
+    Random.list len colorGenerator
 
 
-{-| Find the value to add to a probability so that it matches the given ratio
-against the sum.
-
-Random.weighted accepts any total number of weights (so, for example, 400) and
-divides by that total when applying each weight. This function is to find a new
-weight to add to match a ratio, e.g. for an initial total of 400, and a ratio of
-1/3, you would add a subsequent 200, since 200 / 600 = 1/3. This is
-represented by
-
-b / (a + b) = x
-
-where `a` is the initial total, `b` is the new weight to add, and `x` is the
-ratio. Below is the solution for b
-
--}
-calcAddedProb : Float -> Float -> Float
-calcAddedProb a x =
-    (a * x) / (1 - x)
-
-
-genDelays : Int -> Int -> Float -> Maybe (Int -> Float) -> Cmd Msg
-genDelays len max cutoffRatio maybeSkewFunc =
+delaysGenerator : Int -> Int -> Float -> Random.Generator (List Int)
+delaysGenerator len max cutoffRatio =
     let
-        allValid =
-            List.range 1 max
+        reach =
+            10
 
-        skewFunc =
-            Maybe.withDefault (toFloat >> sq) maybeSkewFunc
+        thresholdGenerator =
+            Random.float (atan -reach) (atan reach)
+                |> Random.map
+                    (tan
+                        >> (+) reach
+                        >> (\x -> x / (2 * reach))
+                        >> (*) (toFloat max)
+                        >> floor
+                    )
 
-        weights =
-            List.map skewFunc allValid
-
-        probSize =
-            List.foldr (+) 0 weights
-
-        joined =
-            List.map2 Tuple.pair weights allValid
-
-        cutoffWeighted =
-            ( calcAddedProb probSize cutoffRatio, max + 1 )
-
-        baseDelay =
-            Random.weighted cutoffWeighted joined
+        toFilteredGenerator x =
+            Random.weighted ( 1 - cutoffRatio, x ) [ ( cutoffRatio, max + 1 ) ]
     in
-    Random.list len baseDelay
+    Random.andThen toFilteredGenerator thresholdGenerator
+        |> Random.list len
+
+
+genDelays : Int -> Int -> Float -> Cmd Msg
+genDelays len max cutoffRatio =
+    delaysGenerator len max cutoffRatio
         |> Random.generate NewDelays
 
 
@@ -221,7 +203,7 @@ update msg space =
                     }
                 , Cmd.batch
                     [ genColors pointCount
-                    , genDelays pointCount frameLength ((100 - cutoffPercentage) / 100) Nothing
+                    , genDelays pointCount frameLength ((100 - cutoffPercentage) / 100)
                     ]
                 )
 
@@ -308,9 +290,9 @@ draw space alignment =
         ( outerStyle, innerStyle ) =
             case alignment of
                 CenteredY ->
-                    -- a pretty rough guess! just used so that elements
-                    -- wrapping under have _some_ padding
-                    ( [ style "height" (String.fromFloat (f usedWidth / 4) ++ "px")
+                    ( [ -- a pretty rough guess! just used so that elements
+                        -- wrapping under have _some_ padding
+                        style "height" (String.fromFloat (f usedWidth / 4) ++ "px")
                       , style "transform" "translateY(50%)"
                       , style "position" "relative"
                       ]
