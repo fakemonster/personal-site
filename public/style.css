@@ -16,3 +16,11 @@
   width: 100%;
   height: 100%;
 }
+
+.header .header-link {
+  opacity: 0;
+}
+
+.header:hover .header-link, .header-link:hover {
+  opacity: 1;
+}

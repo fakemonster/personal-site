@@ -26,6 +26,16 @@ borderEl attrs =
     Element.el (Render.funBorder :: attrs) Element.none
 
 
+elId : String -> Element.Attribute msg
+elId =
+    Element.htmlAttribute << id
+
+
+elClass : String -> Element.Attribute msg
+elClass =
+    Element.htmlAttribute << class
+
+
 funBox : Element msg -> Element msg
 funBox child =
     Element.column [ Element.width Element.fill, Element.padding 18 ]
@@ -110,6 +120,43 @@ embedRenderer =
         ]
 
 
+isAsciiPrintable : Char -> Bool
+isAsciiPrintable c =
+    let
+        code =
+            Char.toCode c
+    in
+    code >= 32 && code <= 126
+
+
+toAnchorName : String -> String
+toAnchorName =
+    String.filter isAsciiPrintable
+        >> String.replace "_" "-"
+        >> String.replace " " "-"
+        >> String.cons '_'
+
+
+toAnchorFrag : String -> String
+toAnchorFrag =
+    String.cons '#' << toAnchorName
+
+
+copyLinkButton : String -> Element msg
+copyLinkButton fragment =
+    Element.link [ elClass "header-link" ]
+        { url = toAnchorFrag fragment
+        , label =
+            Element.image
+                [ Element.width (Element.px 16)
+                , Element.height (Element.px 16)
+                ]
+                { src = "/link.svg"
+                , description = "link to " ++ fragment ++ " section"
+                }
+        }
+
+
 renderer : Markdown.Renderer.Renderer (Element msg)
 renderer =
     { heading =
@@ -117,7 +164,10 @@ renderer =
             case level of
                 H1 ->
                     Element.row
-                        [ Element.alignRight, Font.bold, Font.size 36 ]
+                        [ Element.alignRight
+                        , Font.bold
+                        , Font.size 36
+                        ]
                         [ borderEl [ Render.funSide Render.Left ]
                         , Element.paragraph [ Region.heading 1 ] children
                         , borderEl [ Render.funSide Render.Right ]
@@ -125,17 +175,48 @@ renderer =
 
                 H2 ->
                     Element.paragraph
-                        [ Font.bold, Region.heading 2, Render.padTop 32, Font.size 24 ]
+                        [ Font.bold
+                        , Region.heading 2
+                        , Render.padTop 32
+                        , Font.size 24
+                        , elId (toAnchorName rawText)
+                        , elClass "header"
+                        , Element.onLeft
+                            (Element.el
+                                [ Element.alignBottom, Element.paddingXY 4 0 ]
+                                (copyLinkButton rawText)
+                            )
+                        ]
                         children
 
                 H3 ->
                     Element.paragraph
-                        [ Font.bold, Region.heading 3, Render.padTop 16, Font.size 20 ]
+                        [ Font.bold
+                        , Region.heading 3
+                        , Render.padTop 16
+                        , Font.size 20
+                        , elId (toAnchorName rawText)
+                        , elClass "header"
+                        , Element.onLeft
+                            (Element.el
+                                [ Element.alignBottom, Element.paddingXY 4 0 ]
+                                (copyLinkButton rawText)
+                            )
+                        ]
                         children
 
                 _ ->
                     Element.paragraph
-                        [ Font.bold, Font.size 16 ]
+                        [ Font.bold
+                        , Font.size 16
+                        , elId (toAnchorName rawText)
+                        , elClass "header"
+                        , Element.onLeft
+                            (Element.el
+                                [ Element.alignBottom, Element.paddingXY 4 0 ]
+                                (copyLinkButton rawText)
+                            )
+                        ]
                         children
     , paragraph = Element.paragraph [ Element.spacing 6 ]
     , blockQuote =
@@ -297,7 +378,7 @@ decoder =
         >> Result.map
             (Element.column
                 [ Element.spacing 16
-                , Element.paddingXY 8 0
+                , Element.paddingXY 24 0
                 , Element.centerX
                 , Font.size 16
                 , Element.width
