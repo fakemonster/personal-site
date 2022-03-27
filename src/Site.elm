@@ -14,7 +14,7 @@ type alias Data =
 config : SiteConfig Data
 config =
     { data = data
-    , canonicalUrl = "https://elm-pages.com"
+    , canonicalUrl = "https://www.joethel.com"
     , manifest = manifest
     , head = head
     }
@@ -27,15 +27,16 @@ data =
 
 head : Data -> List Head.Tag
 head static =
-    [ Head.sitemapLink "/sitemap.xml"
+    [-- This was in here by default, but there's definitely no sitemap!
+     -- Head.sitemapLink "/sitemap.xml"
     ]
 
 
 manifest : Data -> Manifest.Config
 manifest static =
     Manifest.init
-        { name = "Site Name"
-        , description = "Description"
+        { name = "Joe Thel"
+        , description = "My personal website"
         , startUrl = Route.Index |> Route.toPath
         , icons = []
         }

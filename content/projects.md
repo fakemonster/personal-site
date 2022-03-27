@@ -1,5 +1,6 @@
 ---
 title: projects
+description: Some things I've worked on.
 ---
 
 # projects

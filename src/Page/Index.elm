@@ -10,6 +10,7 @@ import Json.Decode as Decode
 import Page exposing (PageWithState, StaticPayload)
 import Pages.PageUrl exposing (PageUrl)
 import Pages.Url
+import SeoHelper
 import Shared
 import View exposing (View)
 
@@ -91,18 +92,9 @@ head :
     StaticPayload Data RouteParams
     -> List Head.Tag
 head static =
-    Seo.summary
-        { canonicalUrlOverride = Nothing
-        , siteName = "elm-pages"
-        , image =
-            { url = Pages.Url.external "TODO"
-            , alt = "elm-pages logo"
-            , dimensions = Nothing
-            , mimeType = Nothing
-            }
-        , description = "TODO"
-        , locale = Nothing
-        , title = "TODO title" -- metadata.title -- TODO
+    SeoHelper.simpleSummary
+        { title = "Joe Thel"
+        , description = "My website!"
         }
         |> Seo.website
 
