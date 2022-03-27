@@ -234,6 +234,17 @@ view sharedData page model toMsg pageView =
                 , Element.spacing 32
                 , Element.paddingEach { top = 0, left = 0, right = 0, bottom = 64 }
                 ]
-            |> Element.layout [ Element.centerX ]
+            |> Element.layout
+                [ Element.centerX
+                , Font.family
+                    [ Font.typeface "Source Sans Pro"
+                    , Font.typeface "Trebuchet MS"
+                    , Font.typeface "Lucida Grande"
+                    , Font.typeface "Bitstream Vera Sans"
+                    , Font.typeface "Helvetica Neue"
+                    , Font.sansSerif
+                    ]
+                , Font.color Render.color.nearblack
+                ]
     , title = pageView.title
     }
