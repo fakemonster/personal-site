@@ -2,7 +2,8 @@
   "name": "elm-pages-app",
   "scripts": {
     "postinstall": "elm-tooling install",
-    "start": "elm-pages dev",
+    "dev": "elm-pages dev",
+    "start": "node server",
     "build": "elm-pages build",
     "pages": "elm-pages"
   },
@@ -11,5 +12,9 @@
     "elm-pages": "2.1.10",
     "elm-review": "^2.5.5",
     "elm-tooling": "^1.4.0"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "express": "^4.17.3"
   }
 }
