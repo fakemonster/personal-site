@@ -4,7 +4,7 @@ title: projects
 
 # projects
 
-My existing work is mostly split between [music](/projects#Music) and [programming](/projects#Software) (I don't usually relate them to each other). These days it's about 90% programming!
+A little sampling of things I've done (or thought about) recently. My existing work is mostly split between [music](/projects#_Music) and [programming](/projects#_Software) (I don't usually relate them to each other). These days it's about 90% programming!
 
 ## Software
 
@@ -28,14 +28,16 @@ An interactive waveform using the Web Audio API and React. Click and drag to cha
 
 ### This site
 
-- [source](https://github.com/fakemonster/elm-personal-site)
+- [source](https://github.com/fakemonster/personal-site)
 
-This site is built in Elm (hence the JS requirement). Elm is quite nice! Probably the biggest nuisances I encountered were:
+This site is built in Elm. Elm is great! Coming from React (and with a decent understanding of functional programming), probably the biggest hurdles I encountered were:
 
-1. it really is pure, so effects are managed exclusively by the runtime. This means you have to colocate all your state in one place, which gets a little hairy when you want to have an isolated state that you could (theoretically) duplicate
-1. due to the lack of typeclasses, I had to put up a bit of a fight to get a sane page architecture going. If you were to do something like this web app in Haskell, probably your first bet would be for each page to `implement Page`, where here you instead define a `Page` type that's a union of each page's unique constructor. It was pretty ugly originally, but I came across Richard Feldman's [elm SPA example](https://github.com/rtfeldman/elm-spa-example) which proved to solve the problem more nicely.
+1. it really is pure, so effects are managed exclusively by the runtime. This means you have to colocate all your state in one place, which gets a little hairy when you want to have an isolated state that you could (theoretically) duplicate. To put that another way, Elm _discourages_ you from making things that look like components!
+1. I had to put up a bit of a fight to get a sane page architecture going. There's only one view function, and everything is typed, so how do you view two different things?? What I came up with alone was heinous, but I reworked things after finding Richard Feldman's [elm SPA example](https://github.com/rtfeldman/elm-spa-example), and managed to solve the problem more nicely. Since then, I actually remade this site in [elm-pages](https://elm-pages.com/), so the whole "page" thing is just handled for me.
 
-All said, it's been excellent to work with. I get to have 100% confidence in every refactor, which I'd generally given up on in frontends! And algebraic types are particularly nice when making UI, where you have a lot of things that are _nearly_ identical.
+All said, it's been excellent to work with. I get to have 100% confidence in every refactor, which I've certainly never had in JavaScript (and often even TypeScript)!
+
+Custom types (and immutability!) are particularly nice when making websites, where you have to shuttle around a bunch of things that are _nearly_ identical, and you have a lot of common ways that those things need to be "lifted" into some context (like "value may not exist", "value needs to be loaded over the network", "value will show up later", etc.).
 
 ### Stardew Valley Heelies Mod
 
