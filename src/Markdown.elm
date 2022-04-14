@@ -312,8 +312,6 @@ renderer =
                     )
                     itemsList
                 )
-
-    -- TODO: exercise a code block!
     , codeBlock =
         \{ body, language } ->
             Element.column
