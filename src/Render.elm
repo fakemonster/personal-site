@@ -8,6 +8,7 @@ module Render exposing
     , indent
     , link
     , padTop
+    , paragraph
     )
 
 import Element exposing (Element)
@@ -126,7 +127,12 @@ link details children =
     linkFunction attrs
         { url = details.destination
         , label =
-            Element.paragraph
+            paragraph
                 [ Font.color color.linkblue ]
                 children
         }
+
+
+paragraph : List (Element.Attribute msg) -> List (Element msg) -> Element msg
+paragraph attrs children =
+    Element.paragraph (Element.spacing 8 :: attrs) children

@@ -105,8 +105,37 @@ bcEmbed playerLink siteLink albumTitle _ =
         |> funBox
 
 
-embedRenderer : Markdown.Html.Renderer (List (Element msg) -> Element msg)
-embedRenderer =
+footNote : String -> List (Element msg) -> Element msg
+footNote label content =
+    let
+        superscript =
+            "(" ++ label ++ ")"
+    in
+    if List.isEmpty content then
+        Element.el
+            [ Font.size 12, Element.alignTop ]
+            (Element.html (sup [] [ text superscript ]))
+
+    else
+        Element.row [ Render.indent 24, Element.spacing 8 ]
+            [ Element.column [ Element.height Element.fill ]
+                [ borderEl
+                    [ Render.funSide Render.Left ]
+                , Element.el
+                    [ Element.centerX, Font.size 11 ]
+                    (Element.text superscript)
+                , borderEl
+                    [ Element.height Element.fill
+                    , Element.alignRight
+                    , Render.funSide Render.Right
+                    ]
+                ]
+            , Element.paragraph [ Font.size 12 ] content
+            ]
+
+
+customRenderer : Markdown.Html.Renderer (List (Element msg) -> Element msg)
+customRenderer =
     Markdown.Html.oneOf
         [ Markdown.Html.tag "youtube"
             ytEmbed
@@ -117,6 +146,9 @@ embedRenderer =
             |> Markdown.Html.withAttribute "player"
             |> Markdown.Html.withAttribute "site"
             |> Markdown.Html.withAttribute "name"
+        , Markdown.Html.tag "fn"
+            footNote
+            |> Markdown.Html.withAttribute "symbol"
         ]
 
 
@@ -169,12 +201,12 @@ renderer =
                         , Font.size 36
                         ]
                         [ borderEl [ Render.funSide Render.Left ]
-                        , Element.paragraph [ Region.heading 1 ] children
+                        , Render.paragraph [ Region.heading 1, Font.alignRight ] children
                         , borderEl [ Render.funSide Render.Right ]
                         ]
 
                 H2 ->
-                    Element.paragraph
+                    Render.paragraph
                         [ Font.bold
                         , Region.heading 2
                         , Render.padTop 32
@@ -190,7 +222,7 @@ renderer =
                         children
 
                 H3 ->
-                    Element.paragraph
+                    Render.paragraph
                         [ Font.bold
                         , Region.heading 3
                         , Render.padTop 16
@@ -206,7 +238,7 @@ renderer =
                         children
 
                 _ ->
-                    Element.paragraph
+                    Render.paragraph
                         [ Font.bold
                         , Font.size 16
                         , elId (toAnchorName rawText)
@@ -218,7 +250,7 @@ renderer =
                             )
                         ]
                         children
-    , paragraph = Element.paragraph [ Element.spacing 6 ]
+    , paragraph = Render.paragraph [ Element.spacing 6 ]
     , blockQuote =
         \children ->
             Element.row
@@ -230,13 +262,14 @@ renderer =
                     ]
                     children
                 ]
-    , html = embedRenderer
-    , text = Element.text
+    , html = customRenderer
+    , text = \string -> Render.paragraph [] [ Element.text string ]
     , codeSpan =
         \text ->
-            Element.paragraph
+            Render.paragraph
                 [ Background.color Render.color.lightgray
                 , Font.family [ Font.monospace ]
+                , Font.regular
                 , Font.size 12
                 , Element.paddingXY 4 2
                 , Border.rounded 2
@@ -267,7 +300,7 @@ renderer =
                 (List.map
                     (\(ListItem task children) ->
                         Element.row []
-                            ((case task of
+                            [ case task of
                                 IncompleteTask ->
                                     -- TODO: what do these look like?
                                     Input.defaultCheckbox False
@@ -285,9 +318,8 @@ renderer =
                                         , borderEl
                                             [ Render.funSide Render.Left ]
                                         ]
-                             )
-                                :: children
-                            )
+                            , Render.paragraph [] children
+                            ]
                     )
                     items
                 )
@@ -307,7 +339,7 @@ renderer =
                                 , Render.funSide Render.Bottom
                                 , Render.funSide Render.Left
                                 ]
-                            , Element.paragraph [ Element.paddingXY 0 8 ] items
+                            , Render.paragraph [ Element.paddingXY 0 8 ] items
                             ]
                     )
                     itemsList
@@ -318,10 +350,9 @@ renderer =
                 [ Element.width Element.fill, Font.size 12 ]
                 [ case language of
                     Just lang ->
-                        Element.el [ Element.paddingXY 24 0 ] <|
+                        Element.el [ Element.alignRight ] <|
                             Element.el
-                                [ Element.alignRight
-                                , Element.paddingXY 4 2
+                                [ Element.paddingXY 4 2
                                 , Render.funBorder
                                 , Render.funSide Render.Left
                                 , Render.funSide Render.Bottom
@@ -357,10 +388,10 @@ renderer =
     , tableRow = Element.row []
     , tableCell =
         \maybeAlignment children ->
-            Element.paragraph [] children
+            Render.paragraph [] children
     , tableHeaderCell =
         \maybeAlignment children ->
-            Element.paragraph [] children
+            Render.paragraph [] children
     }
 
 
@@ -375,7 +406,7 @@ decoder =
             (Markdown.Renderer.render renderer)
         >> Result.map
             (Element.column
-                [ Element.spacing 16
+                [ Element.spacing 24
                 , Element.paddingXY 24 0
                 , Element.centerX
                 , Font.size 16
