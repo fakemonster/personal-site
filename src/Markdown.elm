@@ -12,6 +12,7 @@ import Markdown.Block exposing (HeadingLevel(..), ListItem(..), Task(..))
 import Markdown.Html
 import Markdown.Parser
 import Markdown.Renderer
+import Maybe.Extra
 import OptimizedDecoder as Decode exposing (Decoder)
 import Render
 
@@ -36,9 +37,9 @@ elClass =
     Element.htmlAttribute << class
 
 
-funBox : Element msg -> Element msg
-funBox child =
-    Element.column [ Element.width Element.fill, Element.padding 18 ]
+funBox : List (Element.Attribute msg) -> Element msg -> Element msg
+funBox attrs child =
+    Element.column (Element.width Element.fill :: attrs)
         [ Element.row [ Element.width Element.fill ]
             [ borderEl []
             , borderEl [ Element.width Element.fill ]
@@ -84,7 +85,7 @@ ytEmbed url videoName _ =
             []
         ]
         |> Element.html
-        |> funBox
+        |> funBox [ Element.padding 18 ]
 
 
 bcEmbed : String -> String -> String -> List (Element msg) -> Element msg
@@ -102,7 +103,7 @@ bcEmbed playerLink siteLink albumTitle _ =
             [ text (byLine albumTitle) ]
         ]
         |> Element.html
-        |> funBox
+        |> funBox [ Element.padding 18 ]
 
 
 footNote : String -> List (Element msg) -> Element msg
@@ -134,6 +135,22 @@ footNote label content =
             ]
 
 
+aside : List (Element msg) -> Element msg
+aside content =
+    Element.column
+        [ Element.width Element.fill
+        , Font.size 12
+        , Element.padding 12
+        , Element.spacing 16
+        , Background.color Render.color.lightgray
+        ]
+        content
+        |> funBox
+            [ Element.paddingEach
+                { top = 0, left = 36, bottom = 0, right = 0 }
+            ]
+
+
 customRenderer : Markdown.Html.Renderer (List (Element msg) -> Element msg)
 customRenderer =
     Markdown.Html.oneOf
@@ -149,6 +166,8 @@ customRenderer =
         , Markdown.Html.tag "fn"
             footNote
             |> Markdown.Html.withAttribute "symbol"
+        , Markdown.Html.tag "aside"
+            aside
         ]
 
 
@@ -267,7 +286,7 @@ renderer =
     , codeSpan =
         \text ->
             Render.paragraph
-                [ Background.color Render.color.lightgray
+                [ Background.color Render.color.offwhite
                 , Font.family [ Font.monospace ]
                 , Font.regular
                 , Font.size 12
@@ -347,18 +366,26 @@ renderer =
     , codeBlock =
         \{ body, language } ->
             Element.column
-                [ Element.width Element.fill, Font.size 12 ]
+                [ Element.width Element.fill
+                , if Maybe.Extra.isJust language then
+                    Element.htmlAttribute (style "margin-top" "0")
+
+                  else
+                    elClass ""
+                ]
                 [ case language of
                     Just lang ->
                         Element.el [ Element.alignRight ] <|
                             Element.el
                                 [ Element.paddingXY 4 2
+                                , Font.size 12
                                 , Render.funBorder
                                 , Render.funSide Render.Left
                                 , Render.funSide Render.Bottom
                                 ]
-                                (Element.text lang)
+                                (Element.html (span [ style "margin-top" "-6px" ] [ text lang ]))
 
+                    -- (Element.text lang)
                     Nothing ->
                         Element.none
                 , Element.el
@@ -368,7 +395,7 @@ renderer =
                     , Element.width Element.fill
                     , Font.size 12
                     ]
-                    (Element.text body)
+                    (Element.html (pre [ class "code" ] [ text body ]))
                 ]
     , thematicBreak =
         Element.row

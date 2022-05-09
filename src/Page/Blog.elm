@@ -1,6 +1,7 @@
 module Page.Blog exposing (Data, Model, Msg, page)
 
 import DataSource exposing (DataSource)
+import DataSource.File as File
 import DataSource.Glob as Glob
 import Element
 import Head
@@ -29,7 +30,7 @@ type alias RouteParams =
 
 
 type alias Data =
-    List String
+    List { filename : String, title : String }
 
 
 content : DataSource Data
@@ -39,6 +40,16 @@ content =
         |> Glob.capture Glob.wildcard
         |> Glob.match (Glob.literal ".md")
         |> Glob.toDataSource
+        |> DataSource.map
+            (List.map <|
+                \filename ->
+                    ("content/blog/" ++ filename ++ ".md")
+                        |> File.onlyFrontmatter
+                            (Decode.field "title" Decode.string)
+                        |> DataSource.map
+                            (\title -> { title = title, filename = filename })
+            )
+        |> DataSource.resolve
 
 
 page : Page RouteParams Data
@@ -77,14 +88,17 @@ view :
 view _ _ static =
     { title = "blog"
     , body =
-        Element.column [ Element.width (Element.fill |> Element.maximum 720), Element.centerX ]
+        Element.column
+            [ Element.width (Element.fill |> Element.maximum 720)
+            , Element.centerX
+            ]
             (List.map
-                (\filename ->
+                (\{ title, filename } ->
                     Render.link
-                        { title = Just filename
+                        { title = Just title
                         , destination = "/blog/" ++ filename
                         }
-                        [ Element.text filename ]
+                        [ Element.text title ]
                 )
                 static.data
             )

@@ -24,3 +24,9 @@
 .header:hover .header-link, .header-link:hover {
   opacity: 1;
 }
+
+.code {
+  line-height: 1.25;
+  white-space: pre-wrap;
+  margin: 0;
+}

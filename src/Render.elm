@@ -71,6 +71,7 @@ borderSideToString side =
 
 color =
     { linkblue = Element.rgb255 0x00 0x00 0xFF
+    , offwhite = Element.rgb255 0xF0 0xF0 0xF7
     , lightgray = Element.rgb255 0xDD 0xDD 0xEE
     , darkgray = Element.rgb255 0x55 0x55 0x66
     , nearblack = Element.rgb255 0x11 0x11 0x22
@@ -110,7 +111,7 @@ link : { title : Maybe String, destination : String } -> List (Element msg) -> E
 link details children =
     let
         linkFunction =
-            if String.startsWith "/" details.destination then
+            if String.startsWith "/" details.destination || String.startsWith "#" details.destination then
                 Element.link
 
             else
