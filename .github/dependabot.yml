@@ -1,0 +1,17 @@
+version: 2
+updates:
+  - package-ecosystem: "elm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      dependencies:
+        update-types: [patch, minor]
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      dependencies:
+        update-types: [patch, minor]
