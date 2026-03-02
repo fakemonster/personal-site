@@ -13,8 +13,7 @@ But first,
 
 ## What do you mean VDOM?
 
-The very short version is that VDOM (short for "virtual DOM", itself short for "virtual Document Object Model") refers to a "virtual" implementation of the DOM that represents what you see and interact with on a website.
-Because the interface of this thing is made up by whoever implements it, it can be a lot simpler/more concise than writing code to deal with the DOM itself. So end developers like me focus on their content, and the VDOM library author's code will deal with the work of translating the virtual DOM we change to the (verbose but generally sound) real DOM.
+The very short version is that VDOM (short for "virtual DOM", itself short for "virtual Document Object Model") refers to a "virtual" implementation of the DOM that represents what you see and interact with on a website. Mutating the DOM is verbose and error-prone, so the VDOM acts as a convenient interface for end developers like me to focus on content. The VDOM library author's code will deal with the work of translating the virtual DOM we change to the (verbose but generally sound) real DOM.
 
 Maybe, as an "interface" author, I'll come up with something that looks a bit more like I'm writing HTML than like I'm executing JavaScript:
 
@@ -38,9 +37,9 @@ profileBar name avatarSrc =
         ]
 ```
 
-These (React and Elm) are both functions that return VDOM in their respective implementations (a `ReactNode` and an `Html msg`, respectively). Because the framework/library handles the actual translation to DOM, end developers can generally think of these as interchangeable with the real DOM.
+These (React and Elm) are both functions that return VDOM in their respective implementations (a `ReactNode` and an `Html msg`, respectively). Then the library takes on the important work of **diffing:** comparing the VDOM it receives to the _last iteration,_ finding all the differences, and then hopping into the DOM to make modifications. This is more performant than rebuilding the DOM tree every time, and because the framework/library is continuously resynchronizing the DOM to its VDOM, end developers can generally think of the VDOM as interchangeable with the real DOM.
 
-> Rather than "interchangeable", you may have heard this relationship referred to as "transparent", or, incredibly, "opaque." I like interchangeable, mostly because no one will ever say "not interchangeable" somehow means the same thing!
+> You may have heard this relationship referred to as "transparent", or, incredibly, "opaque." I prefer "interchangeable", mostly because no one will ever say its opposite somehow means the same thing!
 
 For a more thorough explanation of VDOM you should visit the [Elm guide](https://guide.elm-lang.org/optimization/lazy.html), which describes why you'd use VDOM _in general,_ as well as the basic principles underlying it. But for us, we'll need to get a bit more into the details of how VDOM management works in Elm specifically.
 
@@ -80,7 +79,7 @@ Point is, Elm is taking over the DOM _as high up as possible_ when it's using `B
 
 To greatly oversimplify, our Elm application at work looks fundamentally similar to the previous example:
 
-```html
+```elm
 main : Program () Model Msg
 main =
     Browser.application
@@ -111,25 +110,25 @@ Let's take a slightly tougher example, and modify the text of the third notifica
 2. find the second element of its child list (`ul#notifications`),
 3. find the third element of _that_ element's child list (`li [] [...]`),
 4. find the first element of _THAT_ element's child list (`text "Everyone's very proud of you."`), and
-4. change the text.
+5. change the text.
 
 We call this an **index basis** for VDOM diffing, since the tree traversal is simply descending through indices until it's "at the right spot".
 
 ### Soundness of VDOM
 
-In programming you generally hear about "soundness" in reference to a type system, as in "this type system is unsound", or "this type system is sound" (a fun lie). But more generally it can mean "this idea always makes sense," and I'm here to tell you VDOM does not always make sense. For the notion of VDOM to work, you're assuming that
+In programming you generally hear about "soundness" in reference to a type system, as in "this type system is unsound", or "this type system is sound" (a lie). But more generally it can mean "this idea always makes sense," and I'm here to tell you VDOM does not always make sense. For the notion of VDOM to work, you're assuming that
 
-1. all values and guarantees represented in VDOM can be mapped losslessly into real DOMspace
-2. to know what changes to map into real DOMspace, you can compare your old VDOM to your new VDOM
+1. all values and guarantees represented in VDOM can be mapped losslessly into the DOM
+2. to know what changes to map into the DOM, you can compare your old VDOM to your new VDOM
 
 The first is why VDOM is "nice to write", the second is why VDOM is generally "fast enough." _Both are untrue because other stuff mutates the DOM sometimes._ But let's start with an example where this unsoundness isn't a big deal.
 
-Let's say you've got a browser extension that puts a little widget over whatever page you're on; it's an image of a well-camouflaged animal, and if you can find that animal you'll win a little crypto (of course it's also mining in the background, but this is totally worth it). To show you that image, the extension must mutate the DOM! Sticking to our example, most extension authors are generous enough to do so in this way:
+Let's say you've got a browser extension that puts a little widget over whatever page you're on; it's an image of a well-camouflaged animal, and if you can find that animal you'll win a little crypto. To show you that image, the extension must mutate the DOM! Sticking to our example, most extension authors are generous enough to do so in this way:
 
 ```html
 <body>
   <div id="main"></div>
-  <ul id="notifications"></div>
+  <ul id="notifications"></ul>
   <div class="fuzzyfinder">
     <img src="https://fuzzyfinder.online/asset/80ae3b1.jpg"></img>
     <button class="fuzzyfinder__answer"></button>
@@ -149,14 +148,14 @@ But as it turns out, the "it" was a _different_ Google Translate bug, and not wi
 <body>
   <div id="main"></div>
   <div id="goog-gt-tt"><!-- some bullshit --></div>
-  <ul id="notifications"></div>
+  <ul id="notifications"></ul>
   <div class="goog-gt-tt"><!-- some more bullshit --></div>
 </body>
 ```
 
 That's right! It appends an element _before_ the last element of `body`, as well as one at the end. Ok! This is pretty bad, because now this soundness presumption:
 
-> to know what changes to map into real DOMspace, you can compare your old VDOM to your new VDOM
+> to know what changes to map into the DOM, you can compare your old VDOM to your new VDOM
 
 is **absolutely untrue.** If we follow the same update algorithm as before:
 
@@ -173,11 +172,11 @@ Defensively, you could say "well Google Translate breaks React too", and dependi
 
 Originally we discussed a few options:
 
-1. "Block" Google Translate entirely. We ruled this out almost immediately; a lot of people use and like this tool, and we can't even block it comprehensively; all we can do is slap a `notranslate` on the body and pray. Maybe try to detect the runtime error and force a page refresh or something.
+1. "Block" Google Translate entirely. We ruled this out almost immediately; a lot of people use and like this tool, and we can't even block it confidently; we can slap a `notranslate` on the body, but the widget part of Google Translate is undocumented, and so we can't be sure we're protected. Maybe try to detect the runtime error and force a page refresh or something; not too satisfying!
 2. Use something like [elm-break-dom](https://github.com/jinjor/elm-break-dom) to make Elm not work at the top-level of the DOM. This was a little sketchy to us. In principle it works, but breaking a core assumption of the Elm runtime may have other effects down the road that would be harder to understand. Plus, your build pipeline having a `sed` command in it is... a bit of a code smell.
 3. Let Translate do its thing, but rebuild the world after the fact. It's not strictly a problem for the DOM to go out of order, only for it to _be_ out of order while the Elm runtime is looking at it!
 
-We took path #3, and it basically looks like this, Elm-side.
+We took path #3 by adding a MutationObserver. Elm-side, the change is trivial:
 
 ```elm
 main : Program () Model Msg
@@ -200,7 +199,7 @@ main =
         }
 ```
 
-Very little changed! We just moved all of our content into a single node. This doesn't fix the problem on its own, since now Google Translate just makes our DOM look like this:
+We just moved all of our content into a single node. Now Google Translate makes our DOM look like this:
 
 ```html
 <body>
@@ -210,7 +209,7 @@ Very little changed! We just moved all of our content into a single node. This d
 </body>
 ```
 
-But it simplifies the JS side of the fix:
+Less dramatic! And having our content in a single node simplifies the JS side of the fix:
 
 ```js
 const observer = new MutationObserver(() => {
@@ -226,7 +225,7 @@ const observer = new MutationObserver(() => {
 observer.observe(document.body, { childList: true });
 ```
 
-We take a MutationObserver, and have it watch the body element. If it ever changes, it checks whether Elm's assumptions about the real DOM (which, in our case, is now "#elm-root is at index 0 and everything is inside of it") have been invalidated, and then forces it to be true again.
+To summarize, our MutationObserver watches the body element. If it ever changes, it checks whether Elm's assumptions about the real DOM (which, in our case, is now "#elm-root is at index 0 and everything is inside of it") have been invalidated, and then forces it to be true again.
 
 Once that observer's fired, all is right with the DOM:
 
@@ -240,7 +239,7 @@ Once that observer's fired, all is right with the DOM:
 
 You could end up in a vicious cycle if your browser extension is _insistent_ on reordering the entire DOM on every animation frame, but at that point, are you even really trying to look at websites anymore?
 
-This has proved out well for us; it's a good general solution to the problem, doesn't try to change compiler output, and isn't a piece of code we've ever had to modify since its first release. It supports Google Translate but also keeps the page healthy for any other extensions that are out here trying to have a little fun.
+This has proved out well for us; it's a good general solution to the problem, doesn't try to change compiler output, and hasn't needed a change since its first release. It supports Google Translate but also keeps the page healthy for any other extensions that are out here trying to have a little fun.
 
 ## What you could do instead
 
@@ -248,4 +247,4 @@ In the intervening time, Simon Lydell has come out with a very cool [alternate V
 
 Though it's quite an extensive change, it's also more comprehensive. It doesn't require reorganizing "intruding" DOM nodes, and even in dramatic situations like random Elm-tracked nodes being _completely removed from the DOM,_ Elm will peacefully go on updating them. Now, updating an effectively deleted node isn't really all that useful, but the resulting soundness is. NoRedInk has a [great article](https://blog.noredink.com/post/800011916366020608/adopting-elm-safe-virtual-dom) on adopting this alternate VDOM implementation as well.
 
-For now I expect we'll stick to what we have given its simplicity, but this is a great option since it requires _no_ changes to your "true source" code, just the build pipeline.
+For now I expect we'll stick to what we have given its simplicity, but this is a great option since it requires _no_ changes to your "true source" code, despite the extensive changes to your build pipeline.
