@@ -19,11 +19,11 @@ In 2021, Deepgram had turned up for me in a StackOverflow jobs search for Elm jo
 
 I was hired for our initial push to build the developer console. So strictly speaking, there wasn't yet "an Elm project" to work on, despite the ton of Elm code that already existed at the company. We were breaking ground.
 
-I had been writing React for four-ish years at this point; to put myself in the wider historical context, hooks had been out for a while, but I was raised in the "class components for state, function components for pure view" era. But I'd also been well-exposed to functional concepts: Redux had me primed for the Elm Architecture, Recompose had me (over)leveraging higher-order functions, and my old job's utility library was, if you can believe it, [Ramda](https://ramdajs.com/). I'd also been tricked into messing with Haskell by a friend, so even syntactically Elm was straightforward for me to pick up. Still, by the time I joined Deepgram I'd only been writing it a couple months, even if I loved it.
+I had been writing React for four-ish years at this point; to put myself in the wider historical context, hooks had been out for a while, but I was raised in the "class components for state, function components for pure view" era. But I'd also been well-exposed to functional concepts: Redux, Recompose, and [Ramda](https://ramdajs.com/). Why do they all start with R? Beats me. I'd also been tricked into messing with Haskell by a friend, so even syntactically Elm was straightforward for me to pick up. Still, by the time I joined Deepgram I'd only been writing it a couple months, even if I loved it.
 
 So when I got asked to get on a call a week before my first day with the CEO and Head of Product about what we'd be building this critical new project in, the subtext was obvious to me: while the company believes in Elm, and believes in its devs taking risks _they_ believe in, this project had to go right, and so it had to go safe; React would be "the right choice".
 
-Instead, the conversation went as thus: I talked about my experience with React, and I talked about what I thought it would be like to work in Elm. Remember, I _hadn't_ worked in Elm, at least professionally! But I knew what immutability, pure view, algbraic types, and zero side-effects would do for a project all the same (especially if you could actually enforce those things). So I talked through what I thought would be easier, what would be harder, what would be better or worse with both options. By the end, they said Elm seemed like the right choice.
+Instead, the conversation went as thus: I talked about my experience with React, and I talked about what I thought it would be like to work in Elm. Remember, I _hadn't_ worked in Elm, at least professionally! But I knew what immutability, pure view, algebraic types, and zero side-effects would do for a project all the same (especially if you could actually enforce those things). So I talked through what I thought would be easier, what would be harder, what would be better or worse with both options (more on that later). By the end, they said Elm seemed like the right choice.
 
 Good news for me! I get to write Elm! But bad news too: I've got to deliver.
 
@@ -87,37 +87,43 @@ I don't regret this choice, but maintenance is objectively more complicated. If 
 
 You can't have a private package in Elm, and for things like our theming library at work, it just
 didn't make sense to publish it (honestly even if we _could_ have private packages, I'm not sure it
-would make sense to deal with the overhead). It's plain easy to have a monorepo, and it's not like
+would make sense to deal with the overhead). It's just easy to have a monorepo, and it's not like
 you're impacted by compile times.
 
 ---
 
-Those are some of my lessons. Hit me up in the Elm Slack if you have thoughts! I want to hear if you're happy with your own technology choices.
-
-So on that note, in case you came to this article feeling existential, let me answer the big question for you.
+These were my lessons that took a while to learn. Not that they're hard lessons per se, just that
+they're informed by the time spent. But you may have come to this article feeling a little more
+existential, in which case, let me answer the big question for you.
 
 ## Would I choose Elm for production again?
 
-Yup. It's not particularly close. While I do earnestly believe that with enough smart people, you'll survive any frontend framework/language choice, this one was a real positive call for the team and the company.
+Yup. Easy choice. While I do earnestly believe that with enough smart people, you'll survive any frontend framework/language choice, this one was a real positive call for the team and the company.
 
-So I wouldn't change the choice, but I will revisit the bets I made when I pitched our leadership on Elm:
+With that said, now's a good time to both describe and revisit the original bets I made when I pitched our leadership on Elm, and see how the tradeoffs are a little different than estimated.
+
+## Early guesses, and how right they were
 
 ### Hiring should be easier (more of a wash)
 
-My thinking here was that picking a "weird" stack means your applicants are people who are _excited_ about your stack. For them to be excited they must be pretty well-studied! I'm not the first one to make this claim, but I will caveat it: the pool is qualified but _very_ small. If you actually filter for "has Elm experience", then there's just not a lot of people! And you still have to deal with a mass of applicants who _don't_ have Elm experience, and just claim they do.
+My thinking here was that picking a "weird" stack means your applicants are people who are _excited_ about your stack. For them to be excited they must be pretty well-studied! That excitement and implicit talent will outweigh the reduced applicant pool size. I'm not the first one to make this claim, but in my experience it plays out a little weakly: the pool is qualified but _very_ small. If you actually filter for "has Elm experience", then there's just not a lot of people! And you still have to deal with the mass of applicants who _don't_ have Elm experience, but will just claim they do.
 
-So in my opinion, there's just no point filtering for it. We tell everybody we use Elm, I think it does attract great talent, but we still benefit from the attitude that "you can learn it on the job" (an engineering org that's mostly Elm and Rust pretty much _has_ to have this opinion). So it's been more common that we hire React developers who are familiar with functional programming than it is to hire Elm developers.
+So in my opinion, there's just no point filtering for it. We tell everybody we use Elm, I think it does attract great talent, but we still benefit from the attitude that "you can learn it on the job" (an engineering org that's mostly Elm and Rust pretty much _has_ to have this opinion). It's been more common that we hire React developers who are familiar with functional programming than it is to hire Elm developers.
 
-### Brand-new Elm apps are slow to build (underestimated)
+### Brand-new Elm apps are slow to build (slightly underestimated)
 
-As I noted above, fearless refactoring means you eliminate a lot of risk in decisionmaking. But even if that refactoring is really safe, you're still doing it. If you aren't diligent, you can lose your productivity to your imagination while you learn your domain.
+Even if refactoring is fearless, you're still doing it. If you aren't diligent with your time, you can lose your productivity to your imagination while you learn your domain.
 
-Plus, when you're building up the Effect pattern from scratch, or designing your API handling module, you're doing stuff that in JavaScript frameworks is probably already handed to you. You might not always like Next.JS (I know I don't) but you aren't going to spend time thinking about how page routing is going to work. That said, our projects are truly from-scratch, and your mileage is going to vary if you use elm-pages or elm-land.
+Plus, when you're building up the Effect pattern from scratch, or designing your API handling module, you're doing stuff that is already handed to you in JavaScript frameworks. You might not always like Next.JS (I know I don't), but you aren't going to spend time thinking about how page routing is going to work. That said, you will spend time trying to figure out how page routing _does_ work, so really you're making a tradeoff.
 
-Keep in mind, these are slowing factors in _making a production codebase._ When I'm making throwaway code, I personally find using Elm to be faster to prototype, even if I have to rig up a bunch of port/web-component plumbing (which I often do, since Deepgram is a pretty audio-forward company!). But if you're thinking about maintenance in the long run, time-to-first-launch might be, say, 6 weeks for React and 8 for Elm. Account for it.
+Keep in mind that these are slowing factors in _making a production codebase._ When I'm making throwaway code, I personally find using Elm to be faster to prototype, even if I have to rig up a bunch of port/web-component plumbing (which I often do, since Deepgram is a pretty audio-forward company!). But if you're thinking about maintenance in the long run, time-to-first-launch might be, say, 6 weeks for React and 8 for Elm. Account for it, don't worry about it too much.
 
-### Old Elm apps are easy to maintain (underestimated)
+### Old Elm apps are easy to maintain (truly underestimated)
 
-There are well-studied reasons that you could just assume this is true: pure functions eliminates classes of errors, algebraic data types are superior for domain modeling, Elm dependencies can't have security vulnerabilities (unless you're using Sub or Cmd from them of course). I just thought these would be minor effects on balance, and they turned out major. The bug incident rate on our dev console is vanishingly low, and mostly caused by whack-a-mole with browser extensions. Our API Playground has a lot more TypeScript (GitHub suggests it's around 6%) since it does so much audio and websocket work, and that interop-ing code is always going to be a point of failure, but even then bugs are pretty uncommon (and I attribute much of it to us still learning the best practices of web components).
+There are well-studied reasons that you could just assume this is true: pure functions eliminate classes of errors, algebraic data types are superior for domain modeling, Elm dependencies have cartoonishly small attack surfaces since there are no side effects. I just thought these would be minor effects on balance, and they turned out major. The bug incident rate on our dev console is vanishingly low, and mostly caused by whack-a-mole with browser extensions. Our API Playground has a lot more TypeScript since it does so much audio and websocket work, and that interop-ing code is always going to be a point of failure, but even then bugs are pretty uncommon (and I attribute much of it to us still learning the best practices of web components).
 
-And most importantly, when the product vision changes, it is stupid easy to just rewrite the type, chase the compiler, and commit. I simply don't worry about shuttling around a ton of code, and I don't have to prove I did it right; the compiler (and elm-review!) do it for me.
+The easiest-felt difference to me between maintenance in JS/TS and in Elm comes down to updating old features. In React (yes, even TypeScript React), if I had to change code where I wasn't normally working, recovering or learning the context for the first time is slow, and tough to guide. In Elm I'll just screw with the types a bit, follow the compiler, and I've usually got a grip on things in short order.
+
+---
+
+These are the landmarks of my experience with Elm in production. If you're weighing this decision yourself, or one similar, I hope this gave you a little to chew on, and maybe lowered the stakes a little!
