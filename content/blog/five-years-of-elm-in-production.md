@@ -73,12 +73,20 @@ Elm-review is the really smart "yes-and" answer to "linting" in the Elm ecosyste
 
 Elm-review carries enough information about your entire AST that, in combination with its autofixing, you really can think of it as a codegen tool. Though, on that note, you should really consider using elm-codegen as well. We use it for our [feature flags](https://package.elm-lang.org/packages/fakemonster/elm-codegen-feature-flags/latest/)!
 
-### Web components are the other secret
+### Web components are the other (evil) secret
 
 I love [Luke Westby's talk](https://www.youtube.com/watch?v=tyFe9Pw6TVE) on using web components in Elm, so I won't rehash it. But I will enumerate the two kinds of problems that I've solved with web components, because if I _didn't_ have web components, I probably would've regretted choosing Elm for Deepgram:
 
 1. integrating JS libraries that have no Elm equivalent. To name a couple examples: Stripe and Lottie. These companies aren't building Elm implementations any time soon (and in fact these technologies leverage web components themselves. Thank you web components!).
 2. integrating browser APIs that have no Elm implementation. Strictly speaking, this can all be done with ports, but there are benefits to web components. In particular, you do not need to label your messages (think about how trackers in Http need a string), and if you're _very_ careful, you can sneak in side effects through attributes/properties. We use web components for ResizeObserver, IntersectionObserver, and the Web Audio API. We actually use web components for websocket management!
+
+So why evil? The utility of web components comes in breaking a core Elm benefit: pure view. At work, just rendering a `SizeListener` causes an update containing a size. Changing the `connect` property of my `WebsocketAgent` to `True` causes an update saying whether connecting succeed or failed! Those are _why_ we use them, but also why they're prone to bugs: at a practical level, these "synchronous effects"<fn symbol="1"/> interfere with your time-travel debugger, because time-traveling to the wrong iteration can cause odd behavior; at a theoretical level, you're likely to introduce bugs by failing to rigorously track and synchronize dual sources of truth: one in JS, one in Elm.
+
+To sum it up, web components are a crucial tool, but require some of your most thoughtful work. Think of them as the `unsafe {}` block of Elm.
+
+<fn symbol="1">
+  A little tip here: If you're going to emit an event, wait an animation frame first. You don't always need to, but it's a smart default that pushes the Elm-component communication pattern into a form that's a little closer to the Elm-port communication pattern. View is still impure but you'll eliminate odd surprises from it being _synchronously_ impure.
+</fn>
 
 ### You probably want a monorepo
 
@@ -120,7 +128,7 @@ Even if refactoring is fearless, you're still doing it. If you aren't diligent w
 
 Plus, when you're building up the Effect pattern from scratch, or designing your API handling module, you're doing stuff that is already handed to you in JavaScript frameworks. You might not always like Next.JS (I know I don't), but you aren't going to spend time thinking about how page routing is going to work. That said, you will spend time trying to figure out how page routing _does_ work, so really you're making a tradeoff.
 
-Keep in mind that these are slowing factors in _making a production codebase._ When I'm making throwaway code, I personally find using Elm to be faster to prototype, even if I have to rig up a bunch of port/web-component plumbing (which I often do, since Deepgram is a pretty audio-forward company!). But if you're thinking about maintenance in the long run, time-to-first-launch might be, say, 6 weeks for React and 8 for Elm. Account for it, don't worry about it too much.
+To continue undermining my own point: keep in mind that these are slowing factors in _making a production codebase._ When I'm making throwaway code, I personally find using Elm to be faster to prototype, even if I have to rig up a bunch of port/web-component plumbing (which I often do, since Deepgram is a pretty audio-forward company!). But if you're thinking about maintenance in the long run, time-to-first-launch might be, say, 6 weeks for React and 8 for Elm. Account for it, don't worry about it too much.
 
 ### Old Elm apps are easy to maintain (truly underestimated)
 
