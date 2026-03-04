@@ -13,6 +13,8 @@ Importantly, I don't want to spend time convincing you to use or not use Elm, no
 First, a concession: I began writing this at just about 4.75 years in prod. But that's not all too catchy, and I'm pretty sure it'll take me three months of small bursts to be happy with the article anyways.
 </aside>
 
+I don't want to describe the full history of building these apps because it's long, and because it's still happening! But I want to illustrate the early days because they inform the trajectory, and because I learned a lot of lessons there too, even if they aren't lessons explicitly covered in this article.
+
 ## A rough timeline
 
 In 2021, Deepgram had turned up for me in a StackOverflow jobs search for Elm jobs. (I was probably the one person on Earth who found a job this way.) The company had a number of substantial Elm projects, and some great developers with expertise in it, but when I had turned up, they were working exclusively on our (Rust) backends. It turns out if you're an API company, you need a lot more backend devs!
@@ -26,6 +28,8 @@ So when I got asked to get on a call a week before my first day with the CEO and
 Instead, the conversation went as thus: I talked about my experience with React, and I talked about what I thought it would be like to work in Elm. Remember, I _hadn't_ worked in Elm, at least professionally! But I knew what immutability, pure view, algebraic types, and zero side-effects would do for a project all the same (especially if you could actually enforce those things). So I talked through what I thought would be easier, what would be harder, what would be better or worse with both options (more on that later). By the end, they said Elm seemed like the right choice.
 
 Good news for me! I get to write Elm! But bad news too: I've got to deliver.
+
+---
 
 All I know at this stage of the project is that we're building an SPA. Everything is behind a login, there's a bunch of pages, and our backend is a JSON API. So Step 1 was create-elm-app (remember create-react-app?), and Step 2 was a straight rip of Richard Feldman's [elm-spa-example](https://github.com/rtfeldman/elm-spa-example).
 
