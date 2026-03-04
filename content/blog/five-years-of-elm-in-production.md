@@ -53,7 +53,7 @@ In terms of my emotional health, fearless refactoring is the best emergent featu
 
 ### You still need tests
 
-I'll be blunt: I started this project with an open heart and a vague memory of someone saying "you only need tests because your types aren't good enough". It's not that we have _no_ tests, but we have way less than you think. The reality is that your types can prove a (non-total) quantity of correctness, and your tests can disprove a (non-total) quantity of incorrectness. Neither truly substitutes the other.
+I'll be blunt: I started this project with an open heart and a vague memory of someone saying "you only need tests because your types aren't good enough". It's not that we have _no_ tests, but we have way less than you think. The reality is that your tests can prove a (non-total) quantity of correctness, and your types can disprove a (non-total) quantity of incorrectness. Neither truly substitutes the other.
 
 The Elm type system is extremely powerful, but it's not perfectly expressive, and so inevitably there's a collection of behaviors that you'll have to disallow with tests. Way less than the alternatives, in my opinion (not just because of types but because of FP), but still nonzero.
 
